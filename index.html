@@ -162,10 +162,11 @@
         .whatsapp-config h4 { color: #856404; margin-bottom: 10px; font-size: 14px; }
         .whatsapp-config input { width: 100%; padding: 10px; border: 2px solid #ffc107; border-radius: 4px; font-size: 14px; }
         
-        .loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 9999; }
+        .loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 9999; flex-direction: column; }
         .loading.active { display: flex; }
-        .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #d4a373; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; }
+        .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #d4a373; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin-bottom: 20px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .loading-text { color: white; font-size: 16px; font-weight: 600; }
         
         @media (min-width: 768px) {
             .logo-text .brand { font-size: 28px; }
@@ -183,10 +184,11 @@
 <body>
     <div class="loading" id="loading">
         <div class="spinner"></div>
+        <div class="loading-text">Chargement...</div>
     </div>
 
     <header>
-        <div class="top-bar">📦 Livraison partout | 📞 0155961969 / 0151502456</div>
+        <div class="top-bar">📦 Livraison Partout | 📞 0155961969 / 0151502456</div>
         <nav>
             <div class="logo-container" onclick="showSection('home')">
                 <img src="image/didi.jpg" alt="Didi's MC Store" class="logo-image">
@@ -325,7 +327,7 @@
                         <label>Photo</label>
                         <div class="image-upload" onclick="document.getElementById('product-image').click()">
                             <p>📸 Ajouter une photo</p>
-                            <small>JPG, PNG</small>
+                            <small>JPG, PNG (Max 1MB recommandé)</small>
                         </div>
                         <input type="file" id="product-image" accept="image/*" style="display:none;" onchange="previewImage(event)">
                         <div class="image-preview" id="image-preview"></div>
@@ -451,7 +453,7 @@
                     <li><a href="https://www.facebook.com/carlene.smith.125323" target="_blank">Facebook - Diana Smith</a></li>
                     <li><a href="https://www.instagram.com/didi_m.c" target="_blank">Instagram - @didi_m.c</a></li>
                     <li><a href="https://www.tiktok.com/@didi_m.c" target="_blank">TikTok - @didi_m.c</a></li>
-                    <li><a href="https://wa.me/237155961969" target="_blank">WhatsApp</a></li>
+                    <li><a href="https://wa.me/2290155961969" target="_blank">WhatsApp</a></li>
                 </ul>
             </div>
         </div>
@@ -460,22 +462,20 @@
 
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, onSnapshot, updateDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
-        import { getStorage, ref, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
+        import { getDatabase, ref, push, onValue, remove, set } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
         const firebaseConfig = {
             apiKey: "AIzaSyAKkJxgDQiYwuErjAyWZyOI3ikd1VOKc6g",
             authDomain: "didi-s-mc-store-3a0a1.firebaseapp.com",
+            databaseURL: "https://didi-s-mc-store-3a0a1-default-rtdb.firebaseio.com",
             projectId: "didi-s-mc-store-3a0a1",
             storageBucket: "didi-s-mc-store-3a0a1.firebasestorage.app",
             messagingSenderId: "454583554594",
-            appId: "1:454583554594:web:e5f09b950da3ea510cf07b",
-            measurementId: "G-NJLHEN42G7"
+            appId: "1:454583554594:web:e5f09b950da3ea510cf07b"
         };
 
         const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const storage = getStorage(app);
+        const db = getDatabase(app);
 
         let credentials = JSON.parse(localStorage.getItem('didisCredentials')) || {username: 'admin', password: 'didis2026'};
         let products = [];
@@ -484,13 +484,16 @@
         let currentFilter = 'tous';
         let currentImage = null;
 
-        window.showLoading = function() { document.getElementById('loading').classList.add('active'); }
+        window.showLoading = function(text = 'Chargement...') { 
+            document.getElementById('loading').classList.add('active');
+            document.querySelector('.loading-text').textContent = text;
+        }
         window.hideLoading = function() { document.getElementById('loading').classList.remove('active'); }
 
-        onSnapshot(collection(db, 'products'), (snapshot) => {
+        onValue(ref(db, 'products'), (snapshot) => {
             products = [];
-            snapshot.forEach((doc) => {
-                products.push({ id: doc.id, ...doc.data() });
+            snapshot.forEach((child) => {
+                products.push({ id: child.key, ...child.val() });
             });
             window.displayProducts();
             window.updateProductsList();
@@ -713,10 +716,14 @@
         window.previewImage = function(event) {
             const file = event.target.files[0];
             if (file) {
+                if (file.size > 2 * 1024 * 1024) {
+                    alert('⚠️ Image trop grande ! Max 2MB recommandé pour un chargement rapide.');
+                }
+                
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    currentImage = file;
-                    document.getElementById('image-preview').innerHTML = '<img src="' + e.target.result + '">';
+                    currentImage = e.target.result;
+                    document.getElementById('image-preview').innerHTML = '<img src="' + currentImage + '">';
                 };
                 reader.readAsDataURL(file);
             }
@@ -724,27 +731,19 @@
 
         document.getElementById('product-form').addEventListener('submit', async function(e) {
             e.preventDefault();
-            window.showLoading();
+            window.showLoading('Ajout du produit...');
 
             try {
-                let imageUrl = 'https://via.placeholder.com/400?text=Produit';
-
-                if (currentImage) {
-                    const imageRef = ref(storage, `products/${Date.now()}_${currentImage.name}`);
-                    await uploadBytes(imageRef, currentImage);
-                    imageUrl = await getDownloadURL(imageRef);
-                }
-
                 const product = {
                     name: document.getElementById('product-name').value,
                     category: document.getElementById('product-category').value,
                     description: document.getElementById('product-description').value,
                     price: parseFloat(document.getElementById('product-price').value),
-                    image: imageUrl,
+                    image: currentImage || 'https://via.placeholder.com/400?text=Produit',
                     dateAdded: new Date().toISOString()
                 };
 
-                await addDoc(collection(db, 'products'), product);
+                await push(ref(db, 'products'), product);
 
                 this.reset();
                 currentImage = null;
@@ -753,7 +752,7 @@
                 window.showNotification('✅ Produit ajouté !');
             } catch (error) {
                 console.error('Erreur:', error);
-                alert('❌ Erreur lors de l\'ajout du produit');
+                alert('❌ Erreur: ' + error.message);
             } finally {
                 window.hideLoading();
             }
@@ -832,13 +831,13 @@
 
         window.deleteProduct = async function(id) {
             if (confirm('Supprimer ce produit ?')) {
-                window.showLoading();
+                window.showLoading('Suppression...');
                 try {
-                    await deleteDoc(doc(db, 'products', id));
+                    await remove(ref(db, `products/${id}`));
                     window.showNotification('✅ Produit supprimé');
                 } catch (error) {
                     console.error('Erreur:', error);
-                    alert('❌ Erreur lors de la suppression');
+                    alert('❌ Erreur: ' + error.message);
                 } finally {
                     window.hideLoading();
                 }
