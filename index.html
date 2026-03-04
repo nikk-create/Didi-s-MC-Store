@@ -121,6 +121,11 @@
         .products-table img { width: 50px; height: 50px; object-fit: cover; border-radius: 4px; }
         .btn-delete { padding: 6px 10px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600; }
         
+        .password-toggle { position: relative; }
+        .password-toggle input { padding-right: 45px; }
+        .toggle-password-btn { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 18px; padding: 5px; color: #666; }
+        .toggle-password-btn:hover { color: #d4a373; }
+        
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2500; align-items: center; justify-content: center; padding: 20px; }
         .modal.active { display: flex; }
         .modal-content { background: white; padding: 25px; border-radius: 8px; width: 100%; max-width: 400px; max-height: 90vh; overflow-y: auto; }
@@ -157,6 +162,11 @@
         .whatsapp-config h4 { color: #856404; margin-bottom: 10px; font-size: 14px; }
         .whatsapp-config input { width: 100%; padding: 10px; border: 2px solid #ffc107; border-radius: 4px; font-size: 14px; }
         
+        .loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 9999; }
+        .loading.active { display: flex; }
+        .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #d4a373; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
         @media (min-width: 768px) {
             .logo-text .brand { font-size: 28px; }
             .logo-image { width: 60px; height: 60px; }
@@ -171,6 +181,10 @@
     </style>
 </head>
 <body>
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+    </div>
+
     <header>
         <div class="top-bar">📦 Livraison partout | 📞 0155961969 / 0151502456</div>
         <nav>
@@ -238,8 +252,7 @@
                 <div class="product-grid" id="product-grid">
                     <div class="empty-state">
                         <div class="empty-state-icon">🛍️</div>
-                        <h3>Aucun produit</h3>
-                        <p>Bientôt disponible</p>
+                        <h3>Chargement des produits...</h3>
                     </div>
                 </div>
             </div>
@@ -326,7 +339,7 @@
                 <div class="products-table-container" id="products-list">
                     <div class="empty-state">
                         <div class="empty-state-icon">📦</div>
-                        <h3>Aucun produit</h3>
+                        <h3>Chargement...</h3>
                     </div>
                 </div>
             </div>
@@ -336,9 +349,9 @@
                 
                 <div class="whatsapp-config">
                     <h4>📱 Numéro WhatsApp pour commandes</h4>
-                    <input type="tel" id="whatsapp-number" placeholder="Ex: 237XXXXXXXXX" value="237155961969">
+                    <input type="tel" id="whatsapp-number" placeholder="Ex: 229XXXXXXXXX" value="2290155961969">
                     <button onclick="saveWhatsApp()" class="btn btn-primary" style="width:100%; margin-top:10px; padding:12px;">💾 Enregistrer</button>
-                    <small style="display:block; margin-top:8px; color:#856404;">Numéro principal: 015-596-1969 | Alternatif: 015-150-2456</small>
+                    <small style="display:block; margin-top:8px; color:#856404;">Numéro principal: 0155961969 | Alternatif: 0151502456</small>
                 </div>
 
                 <div class="settings-section">
@@ -350,11 +363,17 @@
                         </div>
                         <div class="form-group">
                             <label>Nouveau Mot de Passe</label>
-                            <input type="password" id="new-password" required>
+                            <div class="password-toggle">
+                                <input type="password" id="new-password" required>
+                                <button type="button" class="toggle-password-btn" onclick="togglePassword('new-password', this)">👁️</button>
+                            </div>
                         </div>
                         <div class="form-group">
                             <label>Confirmer</label>
-                            <input type="password" id="confirm-password" required>
+                            <div class="password-toggle">
+                                <input type="password" id="confirm-password" required>
+                                <button type="button" class="toggle-password-btn" onclick="togglePassword('confirm-password', this)">👁️</button>
+                            </div>
                         </div>
                         <div id="settings-alert"></div>
                         <button type="submit" class="btn btn-primary" style="width:100%; padding:15px;">💾 Modifier</button>
@@ -384,13 +403,13 @@
                 </div>
                 <div class="form-group">
                     <label>Mot de Passe</label>
-                    <input type="password" id="login-password" required>
+                    <div class="password-toggle">
+                        <input type="password" id="login-password" required>
+                        <button type="button" class="toggle-password-btn" onclick="togglePassword('login-password', this)">👁️</button>
+                    </div>
                 </div>
                 <button type="submit" class="btn btn-primary" style="width:100%; padding:15px;">🚀 Connexion</button>
             </form>
-            <div style="margin-top:15px; padding:15px; background:#f5f5f5; border-radius:4px; font-size:12px;">
-                
-            </div>
         </div>
     </div>
 
@@ -439,40 +458,68 @@
         <div class="footer-bottom">© 2026 Didi's MC Store - Tous droits réservés</div>
     </footer>
 
-    <script>
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, onSnapshot, updateDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+        import { getStorage, ref, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAKkJxgDQiYwuErjAyWZyOI3ikd1VOKc6g",
+            authDomain: "didi-s-mc-store-3a0a1.firebaseapp.com",
+            projectId: "didi-s-mc-store-3a0a1",
+            storageBucket: "didi-s-mc-store-3a0a1.firebasestorage.app",
+            messagingSenderId: "454583554594",
+            appId: "1:454583554594:web:e5f09b950da3ea510cf07b",
+            measurementId: "G-NJLHEN42G7"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+
         let credentials = JSON.parse(localStorage.getItem('didisCredentials')) || {username: 'admin', password: 'didis2026'};
-        let products = JSON.parse(localStorage.getItem('didisProducts')) || [];
+        let products = [];
         let cart = JSON.parse(localStorage.getItem('didisCart')) || [];
         let whatsappNumber = localStorage.getItem('didisWhatsApp') || '237155961969';
         let currentFilter = 'tous';
         let currentImage = null;
 
-        document.addEventListener('DOMContentLoaded', function() {
-            displayProducts();
-            updateProductsList();
-            updateCurrentUsername();
-            updateProductsCount();
-            updateCartUI();
-            loadWhatsAppNumber();
+        window.showLoading = function() { document.getElementById('loading').classList.add('active'); }
+        window.hideLoading = function() { document.getElementById('loading').classList.remove('active'); }
+
+        onSnapshot(collection(db, 'products'), (snapshot) => {
+            products = [];
+            snapshot.forEach((doc) => {
+                products.push({ id: doc.id, ...doc.data() });
+            });
+            window.displayProducts();
+            window.updateProductsList();
+            window.updateProductsCount();
         });
 
-        function loadWhatsAppNumber() {
+        window.addEventListener('load', function() {
+            window.loadWhatsAppNumber();
+            window.updateCurrentUsername();
+            window.updateCartUI();
+        });
+
+        window.loadWhatsAppNumber = function() {
             document.getElementById('whatsapp-number').value = whatsappNumber;
         }
 
-        function saveWhatsApp() {
+        window.saveWhatsApp = function() {
             const number = document.getElementById('whatsapp-number').value.replace(/\s/g, '');
             if (number && number.length >= 10) {
                 whatsappNumber = number;
                 localStorage.setItem('didisWhatsApp', whatsappNumber);
                 alert('✅ Numéro WhatsApp enregistré !');
-                loadWhatsAppNumber();
+                window.loadWhatsAppNumber();
             } else {
                 alert('❌ Veuillez entrer un numéro valide');
             }
         }
 
-        function addToCart(productId) {
+        window.addToCart = function(productId) {
             const product = products.find(p => p.id === productId);
             if (!product) return;
 
@@ -484,11 +531,11 @@
             }
 
             localStorage.setItem('didisCart', JSON.stringify(cart));
-            updateCartUI();
-            showNotification('✅ Ajouté au panier');
+            window.updateCartUI();
+            window.showNotification('✅ Ajouté au panier');
         }
 
-        function updateCartUI() {
+        window.updateCartUI = function() {
             const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
             document.getElementById('cart-count').textContent = cartCount;
 
@@ -506,10 +553,10 @@
                             <div class="cart-item-name">${item.name}</div>
                             <div class="cart-item-price">${item.price.toLocaleString()} FCFA</div>
                             <div class="cart-item-quantity">
-                                <button class="qty-btn" onclick="updateQuantity(${item.id}, -1)">-</button>
+                                <button class="qty-btn" onclick="updateQuantity('${item.id}', -1)">-</button>
                                 <span style="min-width: 25px; text-align: center; font-weight:600;">${item.quantity}</span>
-                                <button class="qty-btn" onclick="updateQuantity(${item.id}, 1)">+</button>
-                                <button class="remove-item" onclick="removeFromCart(${item.id})">✕</button>
+                                <button class="qty-btn" onclick="updateQuantity('${item.id}', 1)">+</button>
+                                <button class="remove-item" onclick="removeFromCart('${item.id}')">✕</button>
                             </div>
                         </div>
                     </div>
@@ -521,31 +568,31 @@
             }
         }
 
-        function updateQuantity(productId, change) {
+        window.updateQuantity = function(productId, change) {
             const cartItem = cart.find(item => item.id === productId);
             if (!cartItem) return;
 
             cartItem.quantity += change;
 
             if (cartItem.quantity <= 0) {
-                removeFromCart(productId);
+                window.removeFromCart(productId);
             } else {
                 localStorage.setItem('didisCart', JSON.stringify(cart));
-                updateCartUI();
+                window.updateCartUI();
             }
         }
 
-        function removeFromCart(productId) {
+        window.removeFromCart = function(productId) {
             cart = cart.filter(item => item.id !== productId);
             localStorage.setItem('didisCart', JSON.stringify(cart));
-            updateCartUI();
+            window.updateCartUI();
         }
 
-        function toggleCart() {
+        window.toggleCart = function() {
             document.getElementById('cart-panel').classList.toggle('active');
         }
 
-        function checkout() {
+        window.checkout = function() {
             if (cart.length === 0) {
                 alert('Votre panier est vide');
                 return;
@@ -561,7 +608,7 @@
             window.open(whatsappUrl, '_blank');
         }
 
-        function showNotification(message) {
+        window.showNotification = function(message) {
             const notification = document.createElement('div');
             notification.className = 'notification';
             notification.textContent = message;
@@ -569,11 +616,11 @@
             setTimeout(() => notification.remove(), 2500);
         }
 
-        function showLoginModal() {
+        window.showLoginModal = function() {
             document.getElementById('login-modal').classList.add('active');
         }
 
-        function closeLoginModal() {
+        window.closeLoginModal = function() {
             document.getElementById('login-modal').classList.remove('active');
             document.getElementById('login-form').reset();
             document.getElementById('login-alert').innerHTML = '';
@@ -584,16 +631,16 @@
             const username = document.getElementById('login-username').value;
             const password = document.getElementById('login-password').value;
             if (username === credentials.username && password === credentials.password) {
-                closeLoginModal();
-                showSection('admin');
+                window.closeLoginModal();
+                window.showSection('admin');
             } else {
-                showAlert('login-alert', '❌ Identifiant ou mot de passe incorrect', 'error');
+                window.showAlert('login-alert', '❌ Identifiant ou mot de passe incorrect', 'error');
             }
         });
 
-        function logout() {
+        window.logout = function() {
             if (confirm('Se déconnecter ?')) {
-                showSection('home');
+                window.showSection('home');
             }
         }
 
@@ -604,43 +651,43 @@
             const confirmPassword = document.getElementById('confirm-password').value;
 
             if (newPassword !== confirmPassword) {
-                showAlert('settings-alert', '❌ Mots de passe différents', 'error');
+                window.showAlert('settings-alert', '❌ Mots de passe différents', 'error');
                 return;
             }
             if (newUsername.length < 3) {
-                showAlert('settings-alert', '❌ Identifiant trop court', 'error');
+                window.showAlert('settings-alert', '❌ Identifiant trop court', 'error');
                 return;
             }
             if (newPassword.length < 6) {
-                showAlert('settings-alert', '❌ Mot de passe trop court', 'error');
+                window.showAlert('settings-alert', '❌ Mot de passe trop court', 'error');
                 return;
             }
 
             credentials = {username: newUsername, password: newPassword};
             localStorage.setItem('didisCredentials', JSON.stringify(credentials));
-            showAlert('settings-alert', '✅ Modifié ! Reconnectez-vous avec vos nouveaux identifiants.', 'success');
+            window.showAlert('settings-alert', '✅ Modifié ! Reconnectez-vous.', 'success');
             this.reset();
-            updateCurrentUsername();
+            window.updateCurrentUsername();
 
             setTimeout(() => {
-                logout();
+                window.logout();
             }, 2000);
         });
 
-        function updateCurrentUsername() {
+        window.updateCurrentUsername = function() {
             document.getElementById('current-username').textContent = credentials.username;
         }
 
-        function updateProductsCount() {
+        window.updateProductsCount = function() {
             document.getElementById('products-count').textContent = products.length;
         }
 
-        function showAlert(elementId, message, type) {
+        window.showAlert = function(elementId, message, type) {
             document.getElementById(elementId).innerHTML = '<div class="alert alert-' + type + '">' + message + '</div>';
             setTimeout(() => document.getElementById(elementId).innerHTML = '', 4000);
         }
 
-        function showSection(section) {
+        window.showSection = function(section) {
             const homeSection = document.getElementById('home-section');
             const adminSection = document.getElementById('admin-section');
 
@@ -654,7 +701,7 @@
             window.scrollTo(0, 0);
         }
 
-        function switchTab(tabName) {
+        window.switchTab = function(tabName) {
             const tabs = document.querySelectorAll('.admin-tab');
             const contents = document.querySelectorAll('.tab-content');
             tabs.forEach(tab => tab.classList.remove('active'));
@@ -663,45 +710,56 @@
             document.getElementById(tabName).classList.add('active');
         }
 
-        function previewImage(event) {
+        window.previewImage = function(event) {
             const file = event.target.files[0];
             if (file) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    currentImage = e.target.result;
-                    document.getElementById('image-preview').innerHTML = '<img src="' + currentImage + '">';
+                    currentImage = file;
+                    document.getElementById('image-preview').innerHTML = '<img src="' + e.target.result + '">';
                 };
                 reader.readAsDataURL(file);
             }
         }
 
-        document.getElementById('product-form').addEventListener('submit', function(e) {
+        document.getElementById('product-form').addEventListener('submit', async function(e) {
             e.preventDefault();
-            const product = {
-                id: Date.now(),
-                name: document.getElementById('product-name').value,
-                category: document.getElementById('product-category').value,
-                description: document.getElementById('product-description').value,
-                price: parseFloat(document.getElementById('product-price').value),
-                image: currentImage || 'https://via.placeholder.com/400?text=Produit',
-                dateAdded: new Date().toLocaleDateString('fr-FR')
-            };
+            window.showLoading();
 
-            products.push(product);
-            localStorage.setItem('didisProducts', JSON.stringify(products));
+            try {
+                let imageUrl = 'https://via.placeholder.com/400?text=Produit';
 
-            this.reset();
-            currentImage = null;
-            document.getElementById('image-preview').innerHTML = '';
+                if (currentImage) {
+                    const imageRef = ref(storage, `products/${Date.now()}_${currentImage.name}`);
+                    await uploadBytes(imageRef, currentImage);
+                    imageUrl = await getDownloadURL(imageRef);
+                }
 
-            displayProducts();
-            updateProductsList();
-            updateProductsCount();
+                const product = {
+                    name: document.getElementById('product-name').value,
+                    category: document.getElementById('product-category').value,
+                    description: document.getElementById('product-description').value,
+                    price: parseFloat(document.getElementById('product-price').value),
+                    image: imageUrl,
+                    dateAdded: new Date().toISOString()
+                };
 
-            showNotification('✅ Produit ajouté');
+                await addDoc(collection(db, 'products'), product);
+
+                this.reset();
+                currentImage = null;
+                document.getElementById('image-preview').innerHTML = '';
+
+                window.showNotification('✅ Produit ajouté !');
+            } catch (error) {
+                console.error('Erreur:', error);
+                alert('❌ Erreur lors de l\'ajout du produit');
+            } finally {
+                window.hideLoading();
+            }
         });
 
-        function displayProducts() {
+        window.displayProducts = function() {
             const grid = document.getElementById('product-grid');
             const filtered = currentFilter === 'tous' ? products : products.filter(p => p.category === currentFilter);
 
@@ -717,26 +775,26 @@
                         <span class="product-badge">Nouveau</span>
                     </div>
                     <div class="product-info">
-                        <div class="product-category">${getCategoryName(p.category)}</div>
+                        <div class="product-category">${window.getCategoryName(p.category)}</div>
                         <div class="product-name">${p.name}</div>
                         <div class="product-description">${p.description}</div>
                         <div class="product-price">${p.price.toLocaleString()} FCFA</div>
-                        <button class="btn-cart" onclick="addToCart(${p.id})">🛒 Ajouter</button>
+                        <button class="btn-cart" onclick="addToCart('${p.id}')">🛒 Ajouter</button>
                     </div>
                 </div>
             `).join('');
         }
 
-        function filterProducts(category) {
+        window.filterProducts = function(category) {
             currentFilter = category;
             const filterBtns = document.querySelectorAll('.filter-btn');
             filterBtns.forEach(btn => btn.classList.remove('active'));
             event.target.classList.add('active');
-            displayProducts();
+            window.displayProducts();
             document.querySelector('.products-section').scrollIntoView({behavior: 'smooth'});
         }
 
-        function updateProductsList() {
+        window.updateProductsList = function() {
             const listContainer = document.getElementById('products-list');
             if (products.length === 0) {
                 listContainer.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📦</div><h3>Aucun produit</h3></div>';
@@ -759,7 +817,7 @@
                                 <td><img src="${p.image}" alt="${p.name}"></td>
                                 <td>${p.name}</td>
                                 <td>${p.price.toLocaleString()} F</td>
-                                <td><button class="btn-delete" onclick="deleteProduct(${p.id})">✕</button></td>
+                                <td><button class="btn-delete" onclick="deleteProduct('${p.id}')">✕</button></td>
                             </tr>
                         `).join('')}
                     </tbody>
@@ -767,18 +825,34 @@
             `;
         }
 
-        function getCategoryName(category) {
+        window.getCategoryName = function(category) {
             const categories = {vetements: 'Vêtements', chaussures: 'Chaussures', accessoires: 'Accessoires', objets: 'Objets'};
             return categories[category] || category;
         }
 
-        function deleteProduct(id) {
-            if (confirm('Supprimer ?')) {
-                products = products.filter(p => p.id !== id);
-                localStorage.setItem('didisProducts', JSON.stringify(products));
-                displayProducts();
-                updateProductsList();
-                updateProductsCount();
+        window.deleteProduct = async function(id) {
+            if (confirm('Supprimer ce produit ?')) {
+                window.showLoading();
+                try {
+                    await deleteDoc(doc(db, 'products', id));
+                    window.showNotification('✅ Produit supprimé');
+                } catch (error) {
+                    console.error('Erreur:', error);
+                    alert('❌ Erreur lors de la suppression');
+                } finally {
+                    window.hideLoading();
+                }
+            }
+        }
+
+        window.togglePassword = function(inputId, button) {
+            const input = document.getElementById(inputId);
+            if (input.type === 'password') {
+                input.type = 'text';
+                button.textContent = '🙈';
+            } else {
+                input.type = 'password';
+                button.textContent = '👁️';
             }
         }
     </script>
