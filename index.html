@@ -47,6 +47,13 @@
         .category-card p { font-size: 11px; color: #666; }
         
         .products-section { background: white; padding: 40px 15px; }
+        .search-bar { max-width: 600px; margin: 0 auto 30px; position: relative; }
+        .search-input { width: 100%; padding: 15px 50px 15px 20px; border: 2px solid #e0e0e0; border-radius: 30px; font-size: 15px; font-family: 'Poppins', sans-serif; transition: all 0.3s; }
+        .search-input:focus { outline: none; border-color: #d4a373; box-shadow: 0 0 0 3px rgba(212,163,115,0.1); }
+        .search-icon { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); font-size: 20px; color: #d4a373; pointer-events: none; }
+        .search-results-info { text-align: center; color: #666; margin-bottom: 20px; font-size: 14px; }
+        .clear-search { position: absolute; right: 50px; top: 50%; transform: translateY(-50%); background: #d4a373; color: white; border: none; width: 25px; height: 25px; border-radius: 50%; cursor: pointer; font-size: 14px; font-weight: bold; display: none; }
+        .clear-search.active { display: block; }
         .filter-bar { display: flex; gap: 8px; margin-bottom: 25px; overflow-x: auto; padding-bottom: 10px; -webkit-overflow-scrolling: touch; }
         .filter-bar::-webkit-scrollbar { height: 4px; }
         .filter-bar::-webkit-scrollbar-thumb { background: #d4a373; border-radius: 4px; }
@@ -266,6 +273,15 @@
         <section class="products-section">
             <div class="section">
                 <h2 class="section-title">Nos Produits</h2>
+                
+                <div class="search-bar">
+                    <input type="text" class="search-input" id="search-input" placeholder="🔍 Rechercher un produit (ex: sac, robe, chaussures...)">
+                    <button class="clear-search" id="clear-search" onclick="clearSearch()">×</button>
+                    <span class="search-icon">🔍</span>
+                </div>
+                
+                <div class="search-results-info" id="search-results-info" style="display:none;"></div>
+                
                 <div class="filter-bar">
                     <button class="filter-btn active" onclick="filterProducts('tous')">Tous</button>
                     <button class="filter-btn" onclick="filterProducts('vetements')">Vêtements</button>
@@ -557,6 +573,7 @@
         let cart = JSON.parse(localStorage.getItem('didisCart')) || [];
         let whatsappNumber = localStorage.getItem('didisWhatsApp') || '2290155961969';
         let currentFilter = 'tous';
+        let currentSearchQuery = '';
         let currentImage = null;
         let editingProductId = null;
         let editImage = null;
@@ -581,6 +598,13 @@
             window.loadWhatsAppNumber();
             window.updateCurrentUsername();
             window.updateCartUI();
+            
+            const searchInput = document.getElementById('search-input');
+            searchInput.addEventListener('input', function(e) {
+                currentSearchQuery = e.target.value.trim().toLowerCase();
+                document.getElementById('clear-search').classList.toggle('active', currentSearchQuery !== '');
+                window.displayProducts();
+            });
         });
 
         function isProductNew(dateAdded) {
@@ -936,10 +960,34 @@
 
         window.displayProducts = function() {
             const grid = document.getElementById('product-grid');
-            const filtered = currentFilter === 'tous' ? products : products.filter(p => p.category === currentFilter);
+            const searchInfo = document.getElementById('search-results-info');
+            
+            let filtered = products;
+            
+            if (currentFilter !== 'tous') {
+                filtered = filtered.filter(p => p.category === currentFilter);
+            }
+            
+            if (currentSearchQuery) {
+                filtered = filtered.filter(p => {
+                    const searchInName = p.name.toLowerCase().includes(currentSearchQuery);
+                    const searchInDesc = (p.description || '').toLowerCase().includes(currentSearchQuery);
+                    const searchInCategory = window.getCategoryName(p.category).toLowerCase().includes(currentSearchQuery);
+                    return searchInName || searchInDesc || searchInCategory;
+                });
+                
+                if (currentSearchQuery) {
+                    searchInfo.style.display = 'block';
+                    searchInfo.innerHTML = filtered.length > 0 
+                        ? `🔍 <strong>${filtered.length}</strong> produit(s) trouvé(s) pour "<strong>${currentSearchQuery}</strong>"`
+                        : `😔 Aucun produit trouvé pour "<strong>${currentSearchQuery}</strong>"`;
+                }
+            } else {
+                searchInfo.style.display = 'none';
+            }
 
             if (filtered.length === 0) {
-                grid.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🛍️</div><h3>Aucun produit</h3></div>';
+                grid.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🛍️</div><h3>Aucun produit trouvé</h3><p>Essayez une autre recherche</p></div>';
                 return;
             }
 
@@ -960,6 +1008,14 @@
                     </div>
                 </div>
             `}).join('');
+        }
+
+        window.clearSearch = function() {
+            document.getElementById('search-input').value = '';
+            currentSearchQuery = '';
+            document.getElementById('clear-search').classList.remove('active');
+            document.getElementById('search-results-info').style.display = 'none';
+            window.displayProducts();
         }
 
         window.filterProducts = function(category) {
