@@ -140,7 +140,8 @@
         .products-table th, .products-table td { padding: 12px 8px; text-align: left; border-bottom: 1px solid #e0e0e0; font-size: 12px; }
         .products-table th { background: #fafafa; font-weight: 600; color: #2c2c2c; text-transform: uppercase; font-size: 11px; }
         .products-table img { width: 50px; height: 50px; object-fit: cover; border-radius: 4px; }
-        .btn-delete { padding: 6px 10px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600; }
+        .btn-delete { padding: 6px 10px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600; margin-right: 5px; }
+        .btn-edit { padding: 6px 10px; background: #ffc107; color: #2c2c2c; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600; }
         
         .password-toggle { position: relative; }
         .password-toggle input { padding-right: 45px; }
@@ -149,7 +150,7 @@
         
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2500; align-items: center; justify-content: center; padding: 20px; }
         .modal.active { display: flex; }
-        .modal-content { background: white; padding: 25px; border-radius: 8px; width: 100%; max-width: 400px; max-height: 90vh; overflow-y: auto; }
+        .modal-content { background: white; padding: 25px; border-radius: 8px; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; }
         .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .modal-header h3 { font-family: 'Playfair Display', serif; font-size: 20px; }
         .close-modal { background: none; border: none; font-size: 28px; cursor: pointer; color: #666; padding: 0; width: 40px; height: 40px; }
@@ -335,11 +336,11 @@
                 <h3 style="font-family: 'Playfair Display', serif; font-size: 20px; margin-bottom: 20px;">Ajouter un Produit</h3>
                 <form id="product-form">
                     <div class="form-group">
-                        <label>Nom</label>
+                        <label>Nom *</label>
                         <input type="text" id="product-name" required placeholder="Ex: Robe élégante">
                     </div>
                     <div class="form-group">
-                        <label>Catégorie</label>
+                        <label>Catégorie *</label>
                         <select id="product-category" required>
                             <option value="">Sélectionner</option>
                             <option value="vetements">Vêtements</option>
@@ -349,11 +350,11 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>Description</label>
-                        <textarea id="product-description" required placeholder="Description du produit..."></textarea>
+                        <label>Description (Optionnel)</label>
+                        <textarea id="product-description" placeholder="Description du produit..."></textarea>
                     </div>
                     <div class="form-group">
-                        <label>Prix (FCFA)</label>
+                        <label>Prix (FCFA) *</label>
                         <input type="number" id="product-price" required placeholder="15000">
                     </div>
                     <div class="form-group">
@@ -448,6 +449,47 @@
         </div>
     </div>
 
+    <div class="modal" id="edit-product-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>✏️ Modifier le Produit</h3>
+                <button class="close-modal" onclick="closeEditModal()">×</button>
+            </div>
+            <form id="edit-product-form">
+                <div class="form-group">
+                    <label>Nom *</label>
+                    <input type="text" id="edit-product-name" required>
+                </div>
+                <div class="form-group">
+                    <label>Catégorie *</label>
+                    <select id="edit-product-category" required>
+                        <option value="vetements">Vêtements</option>
+                        <option value="chaussures">Chaussures</option>
+                        <option value="accessoires">Accessoires</option>
+                        <option value="objets">Objets Divers</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Description (Optionnel)</label>
+                    <textarea id="edit-product-description"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Prix (FCFA) *</label>
+                    <input type="number" id="edit-product-price" required>
+                </div>
+                <div class="form-group">
+                    <label>Changer la Photo (Optionnel)</label>
+                    <div class="image-upload" onclick="document.getElementById('edit-product-image').click()">
+                        <p>📸 Changer l'image</p>
+                    </div>
+                    <input type="file" id="edit-product-image" accept="image/*" style="display:none;" onchange="previewEditImage(event)">
+                    <div class="image-preview" id="edit-image-preview"></div>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width:100%; padding:15px;">💾 Sauvegarder</button>
+            </form>
+        </div>
+    </div>
+
     <footer>
         <div class="footer-content">
             <div class="footer-section">
@@ -495,7 +537,7 @@
 
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-        import { getDatabase, ref, push, onValue, remove } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+        import { getDatabase, ref, push, onValue, remove, update } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
         const firebaseConfig = {
             apiKey: "AIzaSyAKkJxgDQiYwuErjAyWZyOI3ikd1VOKc6g",
@@ -516,6 +558,8 @@
         let whatsappNumber = localStorage.getItem('didisWhatsApp') || '2290155961969';
         let currentFilter = 'tous';
         let currentImage = null;
+        let editingProductId = null;
+        let editImage = null;
 
         window.showLoading = function(text = 'Chargement...') { 
             document.getElementById('loading').classList.add('active');
@@ -539,6 +583,13 @@
             window.updateCartUI();
         });
 
+        function isProductNew(dateAdded) {
+            const addedDate = new Date(dateAdded);
+            const now = new Date();
+            const diffMinutes = (now - addedDate) / (1000 * 60);
+            return diffMinutes < 2;
+        }
+
         window.showImageModal = function(productId) {
             const product = products.find(p => p.id === productId);
             if (!product) return;
@@ -559,6 +610,75 @@
         document.getElementById('image-modal').addEventListener('click', function(e) {
             if (e.target === this) {
                 window.closeImageModal();
+            }
+        });
+
+        window.showEditModal = function(productId) {
+            const product = products.find(p => p.id === productId);
+            if (!product) return;
+
+            editingProductId = productId;
+            editImage = null;
+
+            document.getElementById('edit-product-name').value = product.name;
+            document.getElementById('edit-product-category').value = product.category;
+            document.getElementById('edit-product-description').value = product.description || '';
+            document.getElementById('edit-product-price').value = product.price;
+            document.getElementById('edit-image-preview').innerHTML = `<img src="${product.image}">`;
+
+            document.getElementById('edit-product-modal').classList.add('active');
+        }
+
+        window.closeEditModal = function() {
+            document.getElementById('edit-product-modal').classList.remove('active');
+            document.getElementById('edit-product-form').reset();
+            document.getElementById('edit-image-preview').innerHTML = '';
+            editingProductId = null;
+            editImage = null;
+        }
+
+        window.previewEditImage = function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                if (file.size > 2 * 1024 * 1024) {
+                    alert('⚠️ Image trop grande ! Max 2MB recommandé.');
+                }
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    editImage = e.target.result;
+                    document.getElementById('edit-image-preview').innerHTML = '<img src="' + editImage + '">';
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        document.getElementById('edit-product-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            if (!editingProductId) return;
+
+            window.showLoading('Modification...');
+
+            try {
+                const product = products.find(p => p.id === editingProductId);
+                const updatedProduct = {
+                    name: document.getElementById('edit-product-name').value,
+                    category: document.getElementById('edit-product-category').value,
+                    description: document.getElementById('edit-product-description').value || '',
+                    price: parseFloat(document.getElementById('edit-product-price').value),
+                    image: editImage || product.image,
+                    dateAdded: product.dateAdded
+                };
+
+                await update(ref(db, `products/${editingProductId}`), updatedProduct);
+
+                window.showNotification('✅ Produit modifié !');
+                window.closeEditModal();
+            } catch (error) {
+                console.error('Erreur:', error);
+                alert('❌ Erreur: ' + error.message);
+            } finally {
+                window.hideLoading();
             }
         });
 
@@ -793,7 +913,7 @@
                 const product = {
                     name: document.getElementById('product-name').value,
                     category: document.getElementById('product-category').value,
-                    description: document.getElementById('product-description').value,
+                    description: document.getElementById('product-description').value || '',
                     price: parseFloat(document.getElementById('product-price').value),
                     image: currentImage || 'https://via.placeholder.com/400?text=Produit',
                     dateAdded: new Date().toISOString()
@@ -823,21 +943,23 @@
                 return;
             }
 
-            grid.innerHTML = filtered.map((p, index) => `
+            grid.innerHTML = filtered.map((p, index) => {
+                const showBadge = isProductNew(p.dateAdded);
+                return `
                 <div class="product-card" style="animation-delay: ${index * 0.1}s">
                     <div class="product-image" onclick="showImageModal('${p.id}')">
                         <img src="${p.image}" alt="${p.name}">
-                        <span class="product-badge">Nouveau</span>
+                        ${showBadge ? '<span class="product-badge">Nouveau</span>' : ''}
                     </div>
                     <div class="product-info">
                         <div class="product-category">${window.getCategoryName(p.category)}</div>
                         <div class="product-name">${p.name}</div>
-                        <div class="product-description">${p.description}</div>
+                        ${p.description ? `<div class="product-description">${p.description}</div>` : ''}
                         <div class="product-price">${p.price.toLocaleString()} FCFA</div>
                         <button class="btn-cart" onclick="addToCart('${p.id}')">🛒 Ajouter</button>
                     </div>
                 </div>
-            `).join('');
+            `}).join('');
         }
 
         window.filterProducts = function(category) {
@@ -872,7 +994,10 @@
                                 <td><img src="${p.image}" alt="${p.name}"></td>
                                 <td>${p.name}</td>
                                 <td>${p.price.toLocaleString()} F</td>
-                                <td><button class="btn-delete" onclick="deleteProduct('${p.id}')">✕</button></td>
+                                <td>
+                                    <button class="btn-edit" onclick="showEditModal('${p.id}')">✏️</button>
+                                    <button class="btn-delete" onclick="deleteProduct('${p.id}')">✕</button>
+                                </td>
                             </tr>
                         `).join('')}
                     </tbody>
