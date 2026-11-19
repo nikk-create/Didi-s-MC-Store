@@ -41,7 +41,10 @@ a.btn{text-decoration:none}
 /* hero */
 .hero{position:relative;min-height:min(86vh,720px);display:flex;align-items:flex-end;justify-content:center;text-align:center;color:#fff;overflow:hidden;isolation:isolate}
 .hero-bg{position:absolute;inset:0;background:center/cover no-repeat;z-index:-2;transition:background-image .4s}
-.hero.def{min-height:clamp(520px,64vw,980px)}.hero.def p{display:none}
+.hero.def{min-height:clamp(520px,64vw,980px)}
+.hero.def .hero-in{position:absolute;inset:0;padding:0;display:block}
+.hero.def .hero-copy{position:absolute;top:calc(50% + clamp(125px,20vw,200px) + 14px);left:50%;translate:-50% 0;width:min(520px,calc(100% - 40px));display:flex;flex-direction:column;align-items:center;gap:18px}
+.hero.def .hero-copy p{width:100%;max-width:520px}
 .hero-bg.def{background-position:center 45%}
 .hero.nom .medal{display:none}
 .hero.def .medal{position:absolute;top:50%;left:50%;translate:-50% -50%;width:clamp(250px,40vw,400px)}
@@ -251,7 +254,7 @@ footer .i{width:18px;height:18px;color:#e3c27d}
 
 <div class="top"><span><svg class="i"><use href="#i-truck"/></svg>Livraison partout au Bénin</span><span><svg class="i"><use href="#i-phone"/></svg>0155 96 19 69 · 0151 50 24 56</span></div>
 <header class="nav"><div class="nav-in">
-  <a class="brand" href="#top" aria-label="Accueil"><img src="image/didi.jpg" alt=""><span><b>Didi's MC Store</b><small>Confidence · Luxury · Style</small></span></a>
+  <a class="brand" href="#top" aria-label="Accueil"><img src="image/didi.jpeg" alt=""><span><b>Didi's MC Store</b><small>Confidence · Luxury · Style</small></span></a>
   <div style="display:flex;gap:2px">
     <button class="ib" data-a="goSearch" aria-label="Rechercher"><svg class="i"><use href="#i-search"/></svg></button>
     <button class="ib" data-a="cart" aria-label="Panier"><svg class="i"><use href="#i-bag"/></svg><span class="badge" id="cc" data-n="0"></span></button>
@@ -263,8 +266,8 @@ footer .i{width:18px;height:18px;color:#e3c27d}
 <section class="hero def"><div class="hero-bg def" id="heroBg" style="background-image:url(image/hero.jpg)"></div>
   <div class="hero-in"><h1 class="sr">Didi's MC Store</h1>
     <div class="medal"><img src="image/logo.jpg" alt="Didi's MC Store – Confidence, Luxury, Style"></div>
-    <p>La mode qui vous ressemble, livrée chez vous.</p>
-    <a class="btn" href="#produits">Découvrir la collection</a></div></section>
+    <div class="hero-copy"><p>La mode qui vous ressemble, livrée chez vous.</p>
+    <a class="btn" href="#produits">Découvrir la collection</a></div></div></section>
 
 <section class="wrap"><h2 class="h2">Nos univers</h2><p class="sub">Choisissez une catégorie pour commencer.</p>
   <div class="cats">
