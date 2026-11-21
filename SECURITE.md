@@ -27,7 +27,7 @@ Firebase, et la base refuse tout ce qui n'est pas autorisé.
 ## Protections à ajouter (fortement conseillé)
 - **Restreindre la clé API** : console.cloud.google.com > APIs et services > Identifiants >
   clé « Browser key » du projet > *Restrictions relatives aux applications* > Sites Web >
-  ajoutez `didismcstore.netlify.app/*` (et votre domaine si vous en avez un).
+  ajoutez `smcstore.netlify.app/*` (et votre domaine si vous en avez un).
 - **App Check** (Firebase > App Check) : bloque les robots qui enverraient de fausses commandes.
 - **Alertes budget** : Google Cloud > Facturation > Budgets, pour être prévenu en cas d'abus.
 
@@ -37,3 +37,12 @@ Firebase, et la base refuse tout ce qui n'est pas autorisé.
 - Les anciennes règles étaient ouvertes et l'ancien code admin se trouvait dans la page :
   considérez-le comme compromis, il n'est plus utilisé.
 - Les téléphones des clients restent confidentiels : seule la connexion admin permet de les lire.
+
+## Fidélité et parrainage (mise à jour des règles)
+Les règles de `database.rules.json` ont été complétées : republiez-les (Realtime Database > Règles > Publier)
+en même temps que le nouvel `index.html`.
+- `customers` (clients, téléphones, crédits) : lecture et écriture réservées à l'administrateur connecté.
+- `cards` (carte publique d'un client : prénom, tampons, crédit) : lisible uniquement si l'on connaît le code
+  exact (impossible de lister les cartes), modifiable seulement par l'administrateur.
+- Les réductions annoncées par un client sont revérifiées par l'administrateur à la confirmation
+  (le site recalcule à partir du dossier client et corrige le montant si besoin).
