@@ -321,7 +321,7 @@ footer .i{width:18px;height:18px;color:#e3c27d}
     <div class="search" id="sbox"><svg class="i"><use href="#i-search"/></svg><input id="q" type="search" placeholder="Rechercher une robe, un sac, des sandales…" aria-label="Rechercher"><button data-a="clr" aria-label="Effacer"><svg class="i"><use href="#i-x"/></svg></button></div>
     <div class="pills" id="pills"></div>
   </div>
-  <div class="grid" id="grid"><div class="empty"><svg class="i"><use href="#i-bag"/></svg>Chargement de la collection…</div></div></section>
+  <div class="grid" id="grid"><div class="empty"><svg class="i"><use href="#i-bag"/></svg>Chargement de la collection…</div></div><div id="more"></div></section>
 </main>
 
 <footer><div class="fg">
@@ -363,7 +363,7 @@ const presetFor=id=>{const c=catList().find(x=>x.id===id);return PRE[id]||(c?.ic
 const ST={new:'Nouvelle',ok:'Confirmée',done:'Livrée',no:'Annulée'};
 const PRE={vetements:['XS','S','M','L','XL','XXL'],chaussures:['36','37','38','39','40','41','42','43','44'],accessoires:['Unique'],objets:['Unique']};
 const DEF={h:34,s:52};
-let S={custs:{},card:null,ck:{ref:'',refOk:false,refMsg:'',useCard:false,useCred:false},icon:'tag',helpOpen:true,user:null,prods:[],orders:[],cfg:{},cart:JSON.parse(localStorage.getItem('didisCart')||'[]'),cat:'tous',q:'',admin:false,tab:'orders',sh:null,step:'cart',done:null,pf:null},seen=null;
+let S={lim:12,custs:{},card:null,ck:{ref:'',refOk:false,refMsg:'',useCard:false,useCred:false},icon:'tag',helpOpen:true,user:null,prods:[],orders:[],cfg:{},cart:JSON.parse(localStorage.getItem('didisCart')||'[]'),cat:'tous',q:'',admin:false,tab:'orders',sh:null,step:'cart',done:null,pf:null},seen=null;
 const hx=c=>/^#[0-9a-f]{3,8}$/i.test(c)?c:'#999999';
 const enter=()=>{S.admin=true;$('#admin').classList.add('on');document.body.style.overflow='hidden';drawAdmin()};
 const authMsg=e=>({'auth/invalid-credential':'E-mail ou mot de passe incorrect.','auth/wrong-password':'E-mail ou mot de passe incorrect.','auth/user-not-found':'E-mail ou mot de passe incorrect.','auth/invalid-email':'Adresse e-mail invalide.','auth/too-many-requests':'Trop de tentatives. Patientez quelques minutes puis réessayez.','auth/operation-not-allowed':'La connexion par e-mail n\'est pas activée dans Firebase (voir SECURITE.md).','auth/network-request-failed':'Pas de connexion internet.'}[e?.code]||'Connexion impossible.');
@@ -397,7 +397,7 @@ function drawCats(){const n=id=>S.prods.filter(p=>p.category===id).length;$('#ca
 function drawGrid(){drawCats();const k=S.q.toLowerCase(),l=S.prods.filter(p=>(S.cat==='tous'||p.category===S.cat)&&(!k||(p.name+' '+(p.description||'')+' '+catName(p.category)).toLowerCase().includes(k)));
  $('#pills').innerHTML=[['tous','Tout voir'],...catList().filter(c=>S.prods.some(p=>p.category===c.id)).map(c=>[c.id,c.n])].map(([c,n])=>`<button class="pill ${S.cat===c?'on':''}" data-a="cat" data-c="${c}">${n}</button>`).join('');
  $('#count').textContent=S.prods.length?`${l.length} article${l.length>1?'s':''}${k?` pour « ${S.q} »`:''}`:'';
- $('#grid').innerHTML=l.length?l.map(p=>{const im=imgs(p),cl=(p.colors||[]).filter(c=>c.ok!==false);return`<article class="card" data-a="open" data-id="${p.id}" tabindex="0"><div class="ph">${im[0]?`<img src="${im[0]}" alt="${esc(p.name)}" loading="lazy">`:''}${im[1]?`<img class="alt" src="${im[1]}" alt="" loading="lazy">`:''}${p.soldOut?'<span class="tag out">Épuisé</span>':isNew(p)?'<span class="tag">Nouveau</span>':''}${im.length>1?`<span class="cnt">${I('image')}${im.length}</span>`:''}</div><div class="meta"><h3>${esc(p.name)}</h3><p class="price">${F(p.price)}</p>${cl.length?`<div class="sw">${cl.slice(0,6).map(c=>`<span class="dot" style="background:${hx(c.hex)}" title="${esc(c.n)}"></span>`).join('')}</div>`:''}</div></article>`}).join(''):`<div class="empty">${I('search')}<p>${S.prods.length?'Aucun article ne correspond à votre recherche.':'La collection arrive bientôt.'}</p></div>`}
+ $('#more').innerHTML=l.length>S.lim?`<div style="text-align:center;padding-top:22px"><button class="btn ghost" data-a="more">Voir plus d'articles (${l.length-S.lim})</button></div>`:'';$('#grid').innerHTML=l.length?l.slice(0,S.lim).map(p=>{const im=imgs(p),cl=(p.colors||[]).filter(c=>c.ok!==false);return`<article class="card" data-a="open" data-id="${p.id}" tabindex="0"><div class="ph">${im[0]?`<img src="${im[0]}" alt="${esc(p.name)}" loading="lazy">`:''}${im[1]?`<img class="alt" src="${im[1]}" alt="" loading="lazy">`:''}${p.soldOut?'<span class="tag out">Épuisé</span>':isNew(p)?'<span class="tag">Nouveau</span>':''}${im.length>1?`<span class="cnt">${I('image')}${im.length}</span>`:''}</div><div class="meta"><h3>${esc(p.name)}</h3><p class="price">${F(p.price)}</p>${cl.length?`<div class="sw">${cl.slice(0,6).map(c=>`<span class="dot" style="background:${hx(c.hex)}" title="${esc(c.n)}"></span>`).join('')}</div>`:''}</div></article>`}).join(''):`<div class="empty">${I('search')}<p>${S.prods.length?'Aucun article ne correspond à votre recherche.':'La collection arrive bientôt.'}</p></div>`}
 function drawSheet(){const x=S.sh,p=x.p,im=imgs(p),sz=p.sizes||[],cl=p.colors||[],out=p.soldOut;
  $('#sheet').innerHTML=`<button class="ib x" data-a="close" aria-label="Fermer">${I('x')}</button><div class="sheet"><div class="gal"><div class="main" id="mainImg">${im.length?`<img src="${im[x.i]}" alt="${esc(p.name)}">`:''}${im.length>1?`<button class="arr l" data-a="prev" aria-label="Photo précédente">${I('left')}</button><button class="arr r" data-a="next" aria-label="Photo suivante">${I('right')}</button>`:''}</div>${im.length>1?`<div class="thumbs">${im.map((u,j)=>`<button class="${j===x.i?'on':''}" data-a="thumb" data-i="${j}" aria-label="Photo ${j+1}"><img src="${u}" alt=""></button>`).join('')}</div>`:''}</div>
  <div class="info"><div><small style="color:var(--mut)">${catName(p.category)||''}</small><h2>${esc(p.name)}</h2><p class="price">${F(p.price)}</p></div>${p.description?`<p class="d">${esc(p.description)}</p>`:''}
@@ -464,12 +464,13 @@ const keep=()=>{const p=S.pf;p.name=$('#pn').value;p.price=$('#pp').value;p.cate
 async function addFiles(fs){const e=$('#pe');for(const f of [...fs].filter(f=>f.type.startsWith('image/'))){if(S.pf.images.length>=10){toast('10 photos maximum par produit','alert');break}S.pf.images.push(await shrink(f))}keep();drawPF()}
 /* actions */
 const open=id=>{const p=S.prods.find(x=>x.id===id);if(!p)return;S.sh={p,i:0,qty:1,size:'',color:'',err:''};drawSheet();$('#sheetOv').classList.add('on');document.body.style.overflow='hidden'};
-const closeAll=()=>{$('#cardOv').classList.remove('on');$('#sheetOv').classList.remove('on');$('#loginOv').classList.remove('on');document.body.style.overflow=S.admin?'hidden':''};
+const closeAll=()=>{$('#cardOv').classList.remove('on');$('#sheetOv').classList.remove('on');$('#loginOv').classList.remove('on');document.body.style.overflow=$('#admin').classList.contains('on')?'hidden':''};
 const step=d=>{const x=S.sh,n=imgs(x.p).length;x.i=(x.i+d+n)%n;drawSheet()};
 const A={
  goSearch(){$('#produits').scrollIntoView();setTimeout(()=>$('#q').focus(),400)},
- cat(b){S.cat=b.dataset.c;drawGrid();$('#produits').scrollIntoView()},
- clr(){$('#q').value='';S.q='';$('#sbox').classList.remove('has');drawGrid()},
+ more(){S.lim+=12;drawGrid()},
+ cat(b){S.lim=12;S.cat=b.dataset.c;drawGrid();$('#produits').scrollIntoView()},
+ clr(){S.lim=12;$('#q').value='';S.q='';$('#sbox').classList.remove('has');drawGrid()},
  open(b){open(b.dataset.id)},close:closeAll,prev:()=>step(-1),next:()=>step(1),
  thumb(b){S.sh.i=+b.dataset.i;drawSheet()},
  size(b){S.sh.size=b.dataset.v;S.sh.err='';drawSheet()},color(b){S.sh.color=b.dataset.v;S.sh.err='';drawSheet()},
@@ -514,7 +515,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(b&
 document.addEventListener('input',e=>{if(e.target.id==='orc'){S.ck.ref=e.target.value.trim().toUpperCase().replace(/[^A-Z0-9-]/g,'').slice(0,20);checkRef()}});
 document.addEventListener('toggle',e=>{if(e.target.id==='hlp')S.helpOpen=e.target.open},true);
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(S.pf)A.pclose();else closeAll()}if(S.sh&&$('#sheetOv').classList.contains('on')){if(e.key==='ArrowLeft')step(-1);if(e.key==='ArrowRight')step(1)}if(e.key==='Enter'&&e.target.classList?.contains('card'))open(e.target.dataset.id)});
-$('#q').addEventListener('input',e=>{S.q=e.target.value.trim();$('#sbox').classList.toggle('has',!!S.q);drawGrid()});
+$('#q').addEventListener('input',e=>{S.lim=12;S.q=e.target.value.trim();$('#sbox').classList.toggle('has',!!S.q);drawGrid()});
 let tx=0;document.addEventListener('touchstart',e=>{tx=e.touches[0].clientX},{passive:true});document.addEventListener('touchend',e=>{if(e.target.closest('#mainImg')&&S.sh){const d=e.changedTouches[0].clientX-tx;if(Math.abs(d)>40)step(d<0?1:-1)}});
 document.addEventListener('change',async e=>{if(e.target.id==='uk'){S.ck.useCard=e.target.checked;drawSum()}if(e.target.id==='uc'){S.ck.useCred=e.target.checked;drawSum()}if(e.target.dataset?.lk)set(ref(db,'settings/loyalty/'+e.target.dataset.lk),Math.max(0,+e.target.value||0));if(e.target.id==='medalT')set(ref(db,'settings/medal'),e.target.checked);if(e.target.id==='pimg'){await addFiles(e.target.files)}
  if(e.target.id==='heroIn'&&e.target.files[0]){toast('Analyse de l\'image…','palette');const u=await shrink(e.target.files[0],1600,.8),t=await extract(u);await set(ref(db,'settings/hero'),u);if(t)await set(ref(db,'settings/theme'),t);toast('Image et couleurs mises à jour','palette')}});
